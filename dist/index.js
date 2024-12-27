@@ -43547,13 +43547,13 @@ const handle_review_submitted_1 = __nccwpck_require__(7489);
 const github_1 = __nccwpck_require__(8469);
 const handle_review_comment_created_1 = __nccwpck_require__(5997);
 const i18n_1 = __nccwpck_require__(9170);
-const reviewersFilePath = core.getInput("reviewers_file");
+const reviewersFilePath = core.getInput('reviewers_file');
 async function notifySlack() {
     try {
         await (0, i18n_1.initI18n)();
         const octokit = await (0, github_1.getOctokit)();
-        core.info("Starting notifySlack function");
-        const reviewersYaml = await fs_1.promises.readFile(reviewersFilePath, "utf8");
+        core.info('Starting notifySlack function');
+        const reviewersYaml = await fs_1.promises.readFile(reviewersFilePath, 'utf8');
         const reviewers = js_yaml_1.default.load(reviewersYaml);
         (0, utils_1.debug)(reviewers);
         const event = github.context.payload;
@@ -43561,43 +43561,46 @@ async function notifySlack() {
         (0, utils_1.debug)(event);
         const { action, pull_request, comment, review } = event;
         // create slack message when pr opened
-        if ((action === "opened" || action === "converted_to_draft") &&
+        if (action === 'reopened' && pull_request) {
+            return await (0, handle_pr_open_1.handlePROpen)(octokit, event, reviewers);
+        }
+        if ((action === 'opened' || action === 'converted_to_draft') &&
             pull_request) {
             return await (0, handle_pr_open_1.handlePROpen)(octokit, event, reviewers);
         }
         // update existing slack message when reviewers added
-        if (action === "review_requested" && pull_request) {
+        if (action === 'review_requested' && pull_request) {
             return await (0, handle_request_review_1.handleRequestReview)(octokit, event, reviewers);
         }
         // comment on slack thread when github comment created
-        if (action === "created" && comment) {
+        if (action === 'created' && comment) {
             return await (0, handle_create_comment_1.handleCreateComment)(octokit, event, reviewers);
         }
         // handle pull request review comment
-        if (action === "created" &&
-            github.context.eventName === "pull_request_review_comment") {
+        if (action === 'created' &&
+            github.context.eventName === 'pull_request_review_comment') {
             return await (0, handle_review_comment_created_1.handleReviewCommentCreated)(octokit, event, reviewers);
         }
         // comment on slack thread when github review created
-        if (action === "submitted" && review) {
+        if (action === 'submitted' && review) {
             return await (0, handle_review_submitted_1.handleReviewSubmitted)(octokit, event, reviewers);
         }
         // add emojis to slack message when pr closed or merged
-        if (action === "closed") {
+        if (action === 'closed') {
             const isMerged = !!pull_request?.merged_at;
             if (isMerged)
-                core.info("Event merged");
+                core.info('Event merged');
             await (0, handle_pr_merge_1.handlePRMerge)(octokit, event, isMerged);
         }
     }
     catch (error) {
-        core.error("Error in notifySlack function:");
+        core.error('Error in notifySlack function:');
         core.error(error.message);
         process.exit(1);
     }
 }
 notifySlack().catch((error) => {
-    core.error("Error caught in notifySlack:");
+    core.error('Error caught in notifySlack:');
     core.error(error.message);
     process.exit(1);
 });
